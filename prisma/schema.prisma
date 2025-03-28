@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  phone         String?
+  notificationPreferences NotificationPreferences?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  subscription  Subscription?
+  usageQuota    UsageQuota?
+  topics        Topic[]
+  keywords      Keyword[]
+  briefings     NewsBriefing[]
+  ratings       BriefingRating[]
+}
+
+model Subscription {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  stripeCustomerId String?  @unique
+  status          SubscriptionStatus
+  plan            PlanType
+  currentPeriodEnd DateTime
+  cancelAtPeriodEnd Boolean @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model UsageQuota {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  newsArticlesRead Int      @default(0)
+  topicsAllowed    Int      @default(3)
+  keywordsAllowed  Int      @default(5)
+  resetDate        DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Topic {
+  id          String    @id @default(cuid())
+  name        String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  keywords    Keyword[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Keyword {
+  id          String    @id @default(cuid())
+  word        String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  topicId     String?
+  topic       Topic?    @relation(fields: [topicId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model NotificationPreferences {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id])
+  emailEnabled          Boolean   @default(true)
+  smsEnabled           Boolean   @default(false)
+  briefingFrequency    BriefingFrequency @default(DAILY)
+  briefingTime         String    @default("09:00") // 24-hour format
+  customTopics         Boolean   @default(true)
+  breakingNews         Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+}
+
+enum PlanType {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum BriefingFrequency {
+  DAILY
+  WEEKLY
+  INSTANT
+  CUSTOM
+}
+
+model NewsBriefing {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  title       String
+  content     Json      // Stores an array of news items
+  sentAt      DateTime  @default(now())
+  readAt      DateTime?
+  ratings     BriefingRating[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model BriefingRating {
+  id          String    @id @default(cuid())
+  briefingId  String
+  briefing    NewsBriefing @relation(fields: [briefingId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  rating      Int       // 1-10 rating
+  feedback    String?   // Optional feedback text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([briefingId, userId]) // One rating per user per briefing
+}
