@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Email Sender</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #4f46e5;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #4338ca;
+    }
+    button:disabled {
+      background-color: #a5a5a5;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BriefMe Test Email Sender</h1>
+    <p>Use this form to send a test email for your BriefMe News Briefing App. This is useful for testing your email delivery configuration.</p>
+    
+    <form id="emailForm">
+      <div>
+        <label for="email">Recipient Email:</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      
+      <div>
+        <label for="subject">Subject:</label>
+        <input type="text" id="subject" name="subject" value="BriefMe Test Email" required>
+      </div>
+      
+      <div>
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" rows="5" required>This is a test email from BriefMe News Briefing App to verify your email delivery configuration is working correctly.</textarea>
+      </div>
+      
+      <button type="submit" id="submitBtn">Send Test Email</button>
+    </form>
+    
+    <div id="result" class="result" style="display: none;"></div>
+  </div>
+
+  <script>
+    document.getElementById('emailForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const subject = document.getElementById('subject').value;
+      const message = document.getElementById('message').value;
+      const submitBtn = document.getElementById('submitBtn');
+      const resultDiv = document.getElementById('result');
+      
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="loading"></span> Sending...';
+      resultDiv.style.display = 'none';
+      
+      try {
+        const response = await fetch('/api/test/resend-direct', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, subject, message })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent = `Success! Email sent to ${email}. Check your inbox or spam folder.`;
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent = `Error: ${data.error || 'Failed to send email'}`;
+        }
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = `Error: ${error.message || 'Failed to send email'}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Send Test Email';
+        resultDiv.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
